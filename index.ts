@@ -16,7 +16,7 @@ interface SlackVerify {
 }
 
 interface SlackMessage {
-    bot_id: Boolean,
+    bot_id?: string,
     text: string,
     user: string,
     channel: string,
@@ -28,17 +28,24 @@ interface LambdaRequest {
     event: SlackMessage,
 }
 
-const verify = (data: SlackVerify, callback: cloud.Response): void => {
-  console.log("Running verify with data: " + data)
+const verify = async (data: SlackVerify, callback: cloud.Response): Promise<void> => {
+  console.log("Running verify")
   callback.status(200).json({challenge: data.challenge})
 }
 
-const process = async (event: SlackMessage, callback: cloud.Response): Promise<void> => {
+const processMessage = async (event: SlackMessage, callback: cloud.Response): Promise<void> => {
     // test the message for a match and not a bot
-    console.log("Running process with data: " + event)
+    console.log("Running processMessage")
     if (!event.bot_id && /cake/ig.test(event.text)) {
         console.log("Not a bot!")
-        let text = `<@${event.user}> I hear you like cake?`;
+
+        console.log("Calculating cakes")
+        let item = await cakeCounter.get({user: event.user})
+        let count = ((item && item.count) || 0) + 1
+        await cakeCounter.insert({user: event.user, count})
+        console.log(`User ${event.user} has caked ${count} times`)
+
+        let text = `<@${event.user}> I hear you like cake? In fact, you've liked cake ${count} times!`;
         let message = {
             token: config.slackToken,
             channel: event.channel,
@@ -49,17 +56,12 @@ const process = async (event: SlackMessage, callback: cloud.Response): Promise<v
         let query = qs.stringify(message); // prepare the querystring
         await https.get(`https://slack.com/api/chat.postMessage?${query}`)
 
-        console.log("Calculating cakes")
-        let item = await cakeCounter.get({user: event.user})
-        let count = ((item && item.count) || 0) + 1
-        await cakeCounter.insert({user: event.user, count})
-        console.log(`User ${event.user} has caked ${count} times`)
         callback.status(200).write("success").end()
     }
     callback.status(200).write("ignored").end()
 }
 
-const handler = (data: SlackVerify | LambdaRequest, callback: cloud.Response): void => {
+const handler = async (data: SlackVerify | LambdaRequest, callback: cloud.Response): Promise<void> => {
     console.log("Running handler with data: " + data)
     if (data.token != config.verificationToken) {
         callback.status(401).write("Incorrect token").end()
@@ -69,11 +71,11 @@ const handler = (data: SlackVerify | LambdaRequest, callback: cloud.Response): v
     console.log("Choosing event handler")
     switch (data.type) {
         case "url_verification":
-            verify((<SlackVerify>data), callback)
+            await verify((<SlackVerify>data), callback)
             break
 
         case "event_callback":
-            process((<LambdaRequest>data).event, callback)
+            await processMessage((<LambdaRequest>data).event, callback)
             break
 
         default:
@@ -81,11 +83,10 @@ const handler = (data: SlackVerify | LambdaRequest, callback: cloud.Response): v
     }
 }
 
-endPoint.post("/cake/events", (req, resp) => {
+endPoint.post("/cake/events", async (req, resp) => {
     console.log("Received Request")
-    console.log("Req Body: " + req.body.toString())
     let data: SlackVerify | LambdaRequest = JSON.parse(req.body.toString());
-    handler(data, resp)
+    await handler(data, resp)
     console.log("Finished handler")
 })
 
