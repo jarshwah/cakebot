@@ -45,7 +45,7 @@ const processMessage = async (event: SlackMessage, callback: cloud.Response): Pr
         await cakeCounter.insert({user: event.user, count})
         console.log(`User ${event.user} has caked ${count} times`)
 
-        let text = `<@${event.user}> I hear you like cake? In fact, you've liked cake ${count} times!`;
+        let text = `<@${event.user}> I hear you like cake? In fact, you've liked cake ${count} times!`
         let message = {
             token: config.slackToken,
             channel: event.channel,
@@ -53,10 +53,11 @@ const processMessage = async (event: SlackMessage, callback: cloud.Response): Pr
         }
 
         console.log("Posting our message")
-        let query = qs.stringify(message); // prepare the querystring
+        let query = qs.stringify(message)
         await https.get(`https://slack.com/api/chat.postMessage?${query}`)
 
         callback.status(200).write("success").end()
+        return
     }
     callback.status(200).write("ignored").end()
 }
@@ -85,7 +86,7 @@ const handler = async (data: SlackVerify | LambdaRequest, callback: cloud.Respon
 
 endPoint.post("/cake/events", async (req, resp) => {
     console.log("Received Request")
-    let data: SlackVerify | LambdaRequest = JSON.parse(req.body.toString());
+    let data: SlackVerify | LambdaRequest = JSON.parse(req.body.toString())
     await handler(data, resp)
     console.log("Finished handler")
 })
