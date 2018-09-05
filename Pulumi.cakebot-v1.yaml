@@ -1,0 +1,8 @@
+config:
+  aws:region: ap-southeast-2
+  cakebot:slackChannel: general
+  cakebot:slackToken:
+    secure: AAABAIk55rOBiZCZVcMLxYUUTGs/xW/ccHo2MgHgVJh1VHp66tGb7h70p7/WUMg6GfdUHywFnQKVTER9d8Lb7f0fmNil6zEzxzkwScCGQIrxr+jto+rhc/fZc3phw8TJJVHcOSOG169D68zieh8=
+  cakebot:verificationToken:
+    secure: AAABAJIGM6qCFD3a17HER5iI6hmnFHpUP8cLwvI0omxXnAMHxRcKpMtVffqrGkApMqrh1+ji/74=
+  cloud:provider: aws
