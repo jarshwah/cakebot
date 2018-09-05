@@ -55,18 +55,20 @@ const processMessage = async (event: SlackMessage, callback: cloud.Response): Pr
         console.log("Posting our message")
         let query = qs.stringify(message)
         await https.get(`https://slack.com/api/chat.postMessage?${query}`)
-
+        console.log("Message posted, returning success")
         callback.status(200).write("success").end()
         return
     }
+    console.log("Ignoring message")
     callback.status(200).write("ignored").end()
 }
 
 const handler = async (data: SlackVerify | LambdaRequest, callback: cloud.Response): Promise<void> => {
-    console.log("Running handler with data: " + data)
+    console.log("Running handler")
     if (data.token != config.verificationToken) {
         callback.status(401).write("Incorrect token").end()
         console.error("Error writing callback")
+        return
     }
 
     console.log("Choosing event handler")
